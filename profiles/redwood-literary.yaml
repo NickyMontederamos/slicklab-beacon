@@ -1,0 +1,72 @@
+# Redwood Literary - literary management agency (transmedia rights, distribution).
+# Facts below are taken from the client's own live website (redwoodliterary.org).
+id: redwood-literary
+name: Redwood Literary
+aliases: [RedWoodLiterary, Red Wood Literary]
+category: Literary management and transmedia rights agency
+website: https://redwoodliterary.org/
+regulated: false
+owner_is_operator: false
+
+consent:                        # TODO(Nicole): fill in real details before any client-facing run
+  granted_by: PENDING CONFIRMATION - do not publish until this is real
+  date: 2026-10-03
+  method: PENDING - confirm whether written consent is on file
+  reference: null
+
+contact:
+  phone: null                   # no phone published on the site - none invented
+  email: support@redwoodliterary.org
+  address: null                 # no street address published on the site
+  google_maps_url: null
+  google_place_id: null
+
+hours: []                       # no opening hours published - none invented
+
+services:
+  - name: Strategic distribution and rights
+    description: Global distribution strategy plus rights management for represented titles.
+  - name: Dramatic rights development
+    description: Active pitching to film studios, streaming platforms and television producers, with every title assessed for screen adaptation potential.
+  - name: Translation and international rights
+    description: International translation and cross-territory rights handling.
+  - name: Author brand building
+    description: Author brand development alongside literary and transmedia representation.
+
+tone: Editorial, professional, measured. No hype.
+
+facts:
+  - id: f-positioning
+    text: Redwood Literary is a full-service literary management agency specialising in strategic distribution, dramatic rights development, and author brand building worldwide.
+    source: https://redwoodliterary.org/
+  - id: f-response
+    text: Redwood Literary reviews every submitted query package thoroughly and states an expected response time of 3 to 4 weeks.
+    source: https://redwoodliterary.org/
+  - id: f-agents
+    text: Redwood Literary's agents are Julian Vance for dramatic rights and fiction, Marcus Reyes for fiction, non-fiction and graphic novels, and David Chen for fiction, non-fiction and picture books.
+    source: https://redwoodliterary.org/
+  - id: f-seeks
+    text: Redwood Literary is actively seeking new voices, high-concept fiction, compelling memoirs and groundbreaking visual storytelling.
+    source: https://redwoodliterary.org/
+  - id: f-fraud
+    text: "Redwood Literary publishes a fraud warning: if you receive a suspicious message claiming to be from Redwood Literary, do not reply, click links, send materials, or provide payment information, and contact the agency directly through the contact information on its website."
+    source: https://redwoodliterary.org/
+
+forbidden_phrases: [guaranteed acceptance, guaranteed representation, pay for a deal]
+
+visibility:
+  runs_per_question: 3
+  location_hint: United States
+  questions:
+    - Who is a good literary agent for new fiction?
+    - How do I get a literary agent representation?
+    - Who can help me sell film rights to my book?
+    - What is a literary management agency?
+    - How do I find a book agent for my memoir?
+    - Who handles translation rights for books?
+    - Where can I submit a query to a literary agency?
+    - What graphic novel literary agents exist?
+    - How long do literary agents take to respond?
+    - What is Redwood Literary?
+    - Who pitches books to film and TV studios?
+    - How do I get my book adapted into a film?

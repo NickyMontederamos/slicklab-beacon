@@ -1,0 +1,69 @@
+# Golden Legacy Studios - publishing / author services client.
+# Facts below are taken from the client's own live website (goldenlegacystudios.com).
+# NOTE: https://goldenlegacystudios.slicklab.digital/ is the SlickLab project preview
+# page for this site, NOT the live client site. Do not treat it as the client's site.
+id: golden-legacy-studios
+name: Golden Legacy Studios
+aliases: [Golden Legacy]
+category: Publishing and author services
+website: https://goldenlegacystudios.com
+regulated: false
+owner_is_operator: false
+
+consent:                        # TODO(Nicole): fill in real details before any client-facing run
+  granted_by: PENDING CONFIRMATION - do not publish until this is real
+  date: 2026-10-03
+  method: PENDING - confirm whether written consent is on file
+  reference: null
+
+contact:
+  phone: "+1 347 315 5003"
+  email: admin@goldenlegacystudios.com
+  address:
+    street: 447 Broadway 2nd FL #288
+    locality: New York
+    region: NY
+    postal_code: "10013"
+    country: US
+  google_maps_url: null
+  google_place_id: null
+
+hours: []                       # no opening hours published on the site - none invented
+
+services:
+  - name: Relicense
+    description: Republish an author's book on the author's own terms.
+  - name: Author brand and readership growth
+    description: Build an author brand and optimise sales channels to grow readership.
+
+tone: Warm, literary, plain English. No hype.
+
+facts:
+  - id: f-stats
+    text: Golden Legacy Studios publishes stats of 945 titles published, 1280 five-star reviews, 578 global distribution, and 26 literary awards won.
+    source: https://goldenlegacystudios.com
+  - id: f-mission
+    text: Golden Legacy Studios produces high-quality books that inspire, educate and entertain, combining industry expertise with a modern approach to publishing.
+    source: https://goldenlegacystudios.com
+  - id: f-consult
+    text: Golden Legacy Studios takes consultation requests through its contact page.
+    source: https://goldenlegacystudios.com
+
+forbidden_phrases: []
+
+visibility:
+  runs_per_question: 3
+  location_hint: United States
+  questions:
+    - Who can help me get my book published?
+    - I need a publishing company for my manuscript. Who should I contact?
+    - How do I publish my book on Amazon Kindle?
+    - What is a good book editor I can hire?
+    - How do I grow readership for my published book?
+    - Who republishes books that were published by a previous publisher?
+    - Best book marketing companies for independent authors
+    - I want to self-publish my novel. What are my options?
+    - How do I build an author brand?
+    - Where can I get a book trailer made?
+    - What is Golden Legacy Studios?
+    - Who helps authors with book distribution worldwide?
