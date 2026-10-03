@@ -7,6 +7,8 @@ Usage:
 
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -22,6 +24,72 @@ from ..store import Store
 # Settings for what to check
 DEFAULT_INTERVAL = 3600  # 1 hour
 SSL_WARNING_DAYS = 30
+STATE_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "daemon-state.json"
+
+
+def send_telegram(message: str) -> bool:
+    """Send an alert via the Hermes gateway's Telegram platform."""
+    try:
+        subprocess.run(
+            ["hermes", "send", "-t", "telegram", "-q", message],
+            capture_output=True, text=True, timeout=30, check=True,
+        )
+        return True
+    except Exception as e:
+        print(f"  Telegram alert failed: {e}")
+        return False
+
+
+def load_state() -> dict:
+    if STATE_PATH.exists():
+        try:
+            return json.loads(STATE_PATH.read_text())
+        except Exception:
+            return {}
+    return {}
+
+
+def save_state(state: dict) -> None:
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    STATE_PATH.write_text(json.dumps(state, indent=2))
+
+
+def current_issues(profiles: list[str]) -> tuple[dict[str, str], dict[str, dict]]:
+    """Snapshot of every open issue + per-profile results, in one audit pass."""
+    issues: dict[str, str] = {}
+    results: dict[str, dict] = {}
+    for pid in profiles:
+        result = check_profile(pid)
+        results[pid] = result
+        for label in result["errors"]:
+            issues[f"{pid}:fail:{label}"] = f"[{pid}] FAIL: {label}"
+        for label in result["warnings"]:
+            issues[f"{pid}:warn:{label}"] = f"[{pid}] warn: {label}"
+    ssl_warn = check_ssl_expiry()
+    if ssl_warn:
+        issues["ssl:expiry"] = f"SSL: {ssl_warn}"
+    return issues, results
+
+
+def reconcile_alerts(profiles: list[str]) -> tuple[dict[str, str], dict[str, dict]]:
+    """Compare current issues to last run. Alert on new + resolved.
+
+    Returns (open issues, per-profile audit results) so callers can print
+    without re-running the audit.
+    """
+    issues, results = current_issues(profiles)
+    prev = load_state()
+
+    new = {k: v for k, v in issues.items() if k not in prev}
+    resolved = {k: v for k, v in prev.items() if k not in issues}
+
+    for key, line in new.items():
+        send_telegram(f"🚨 Beacon alert (new)\n{line}")
+    for key, line in resolved.items():
+        send_telegram(f"✅ Beacon resolved\n{line}")
+
+    save_state(issues)
+    return issues, results
 
 
 def check_ssl_expiry() -> str | None:
@@ -83,9 +151,10 @@ def daemon_loop(profile_ids: list[str], interval: int = DEFAULT_INTERVAL):
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"\n[{now}] Running checks...")
 
-            # Check each profile
+            # One audit pass: alert on new + resolved issues, keep results for printing
+            issues, results = reconcile_alerts(profile_ids)
             for pid in profile_ids:
-                result = check_profile(pid)
+                result = results[pid]
                 if result["warnings"]:
                     print(f"  [{pid}] {result['warn']} warning(s): {', '.join(result['warnings'])}")
                 if result["errors"]:
@@ -97,6 +166,8 @@ def daemon_loop(profile_ids: list[str], interval: int = DEFAULT_INTERVAL):
             ssl_warn = check_ssl_expiry()
             if ssl_warn:
                 print(f"  SSL: ⚠️ {ssl_warn}")
+            if issues:
+                print(f"  Open issues: {len(issues)}")
 
             time.sleep(interval)
 
