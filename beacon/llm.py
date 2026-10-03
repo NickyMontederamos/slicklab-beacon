@@ -236,9 +236,21 @@ def get_visibility_llm(settings: Settings) -> LLM:
     """Which model answers the customer questions. Free tier first; Claude only if chosen."""
     import os
 
+    provider = settings.visibility_provider
+    # An explicit free provider wins, even while drafting runs in fake mode.
+    if provider in FREE_PROVIDERS:
+        base_url, key_env = FREE_PROVIDERS[provider]
+        api_key = os.environ.get(key_env) if key_env else None
+        if key_env and not api_key:
+            raise LLMError(f"Set {key_env} in .env (free key from {provider}).")
+        if not settings.free_model:
+            raise LLMError(
+                "Set BEACON_FREE_MODEL in .env. Run `beacon free-models` to see current "
+                "free model names."
+            )
+        return FreeLLM(provider, settings.free_model, api_key, base_url, settings.free_delay)
     if settings.llm == "fake":
         return FakeLLM()
-    provider = settings.visibility_provider
     if provider == "auto":
         provider = next(
             (p for p, (_, key) in FREE_PROVIDERS.items() if key and os.environ.get(key)), "claude"
