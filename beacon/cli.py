@@ -10,6 +10,7 @@ import click
 
 from .agents import audit as audit_agent
 from .agents import content, critic, visibility
+from .agents.daemon import check_profile, daemon_loop, check_ssl_expiry
 from .auth import Users
 from .config import get_settings
 from .llm import LLMError, get_llm, get_visibility_llm, list_free_openrouter_models
@@ -294,6 +295,41 @@ def user_list() -> None:
 def user_disable(user_id: int) -> None:
     Users(get_settings().auth_db).disable(user_id)
     click.echo(f"Disabled user {user_id}.")
+
+
+@cli.group("daemon")
+def daemon_group() -> None:
+    """Constant monitoring and improvement agent."""
+
+
+@daemon_group.command("check")
+@click.argument("client_id")
+def daemon_check(client_id: str) -> None:
+    """One-time health check for a profile."""
+    result = check_profile(client_id)
+    click.echo(f"\nProfile: {result['profile']}")
+    click.echo(f"  Audit: {result['pass']} pass, {result['warn']} warn, {result['fail']} fail")
+    if result["warnings"]:
+        for w in result["warnings"]:
+            click.echo(f"    ⚠️ {w}")
+    if result["errors"]:
+        for e in result["errors"]:
+            click.echo(f"    ✘ {e}")
+    ssl_warn = check_ssl_expiry()
+    if ssl_warn:
+        click.echo(f"  SSL: ⚠️ {ssl_warn}")
+
+
+@daemon_group.command("run")
+@click.option("--interval", default=3600, help="Seconds between checks (default 1h)")
+def daemon_run_cmd(interval: int) -> None:
+    """Run daemon indefinitely, checking all profiles at interval."""
+    s = get_settings()
+    profile_ids = [p.id for p in list_profiles(s.profiles_dir)]
+    if not profile_ids:
+        click.echo("No profiles found. Create a YAML file in profiles/ directory.")
+        sys.exit(1)
+    daemon_loop(profile_ids, interval)
 
 
 @cli.command("serve")
