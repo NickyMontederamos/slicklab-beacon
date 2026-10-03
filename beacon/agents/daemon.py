@@ -24,6 +24,9 @@ from ..store import Store
 # Settings for what to check
 DEFAULT_INTERVAL = 3600  # 1 hour
 SSL_WARNING_DAYS = 30
+# VISIBILITY_DROP_THRESHOLD = 0.05  # 5% drop triggers alert
+# Visibility runs cost ~36 API calls each. Enable with ANTHROPIC_API_KEY in .env
+# Run manually: beacon visibility run <client> --label <label>
 STATE_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "daemon-state.json"
 
 
