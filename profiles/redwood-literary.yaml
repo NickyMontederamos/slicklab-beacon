@@ -8,11 +8,11 @@ website: https://redwoodliterary.org/
 regulated: false
 owner_is_operator: false
 
-consent:                        # TODO(Nicole): fill in real details before any client-facing run
-  granted_by: PENDING CONFIRMATION - do not publish until this is real
+consent:                        # confirmed by Nicole (SlickLab) 2026-10-03: operator's client
+  granted_by: Redwood Literary
   date: 2026-10-03
-  method: PENDING - confirm whether written consent is on file
-  reference: null
+  method: email                 # TODO(Nicole): change if the engagement used a signed contract
+  reference: consents/redwood-literary   # TODO(Nicole): point this at the filed document
 
 contact:
   phone: null                   # no phone published on the site - none invented
