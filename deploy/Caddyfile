@@ -1,0 +1,13 @@
+# Caddy gets and renews the HTTPS certificate automatically.
+# Point an A record for beacon.slicklab.digital at the VPS first.
+beacon.slicklab.digital {
+    encode gzip
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "same-origin"
+        Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'"
+    }
+    reverse_proxy 127.0.0.1:8077
+}

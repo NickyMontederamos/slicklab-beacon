@@ -1,0 +1,21 @@
+# /etc/systemd/system/beacon.service
+# Web inbox for SlickLab Beacon. Install: see README "Deploy on a VPS".
+[Unit]
+Description=SlickLab Beacon web inbox
+After=network.target
+
+[Service]
+User=beacon
+Group=beacon
+WorkingDirectory=/opt/beacon
+EnvironmentFile=/opt/beacon/.env
+ExecStart=/opt/beacon/.venv/bin/beacon serve --host 127.0.0.1 --port 8077
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/beacon/data
+
+[Install]
+WantedBy=multi-user.target

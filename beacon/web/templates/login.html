@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="panel login">
+  <h2>Log in</h2>
+  <p class="muted small">Use the access token Beacon gave you.</p>
+  <form method="post" action="/login">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="token">Access token</label>
+    <input id="token" type="password" name="token" autocomplete="current-password" required autofocus>
+    <div class="actions"><button class="primary">Log in</button></div>
+  </form>
+</div>
+{% endblock %}

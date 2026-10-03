@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}AI visibility · {{ profile.name }}{% endblock %}
+{% block content %}
+{% if not runs %}
+<div class="panel"><p class="muted">No runs yet. Start a baseline with<br><code>beacon visibility run {{ profile.id }} --label baseline</code></p></div>
+{% else %}
+<div class="panel">
+  <h2>Compare two runs</h2>
+  <form method="get" class="actions">
+    <input type="hidden" name="run" value="{{ summary.run.id if summary }}">
+    <select name="before">{% for r in runs %}<option value="{{ r.id }}" {{ 'selected' if loop.last }}>#{{ r.id }} {{ r.label }}</option>{% endfor %}</select>
+    <span>→</span>
+    <select name="after">{% for r in runs %}<option value="{{ r.id }}" {{ 'selected' if loop.first }}>#{{ r.id }} {{ r.label }}</option>{% endfor %}</select>
+    <button>Compare</button>
+  </form>
+  {% if comparison %}
+    <p><strong>{{ '%.0f' % (comparison.before.rate*100) }}% → {{ '%.0f' % (comparison.after.rate*100) }}%</strong> ({{ '%+.0f' % (comparison.delta*100) }} pts). {{ comparison.verdict }}</p>
+    <div class="table-scroll"><table>
+      <tr><th>Question</th><th>Before</th><th>After</th></tr>
+      {% for q in comparison.questions %}<tr><td>{{ q.question }}</td><td>{{ '–' if q.before is none else '%.0f%%' % (q.before*100) }}</td><td>{{ '%.0f%%' % (q.after*100) }}</td></tr>{% endfor %}
+    </table></div>
+  {% endif %}
+</div>
+
+{% if summary %}
+<div class="panel">
+  <h2>Run #{{ summary.run.id }} · {{ summary.run.label }} <span class="tag {{ summary.run.status }}">{{ summary.run.status }}</span></h2>
+  <p class="muted small">{{ summary.run.provider }} · {{ summary.run.model }} · each question asked {{ summary.run.runs_per_question }}× · {{ summary.run.started_at.replace('T', ' ')[:16] }} UTC{% if summary.errors %} · {{ summary.errors }} error(s) excluded{% endif %}</p>
+  <p><strong>Named in {{ summary.mentions }}/{{ summary.total }} answers ({{ '%.0f' % (summary.rate*100) }}%)</strong>
+    <span class="muted small">95% range {{ '%.0f' % (summary.ci[0]*100) }}–{{ '%.0f' % (summary.ci[1]*100) }}%</span></p>
+  <div class="table-scroll"><table>
+    {% for q in summary.per_question %}<tr><td>{{ q.question }}</td><td style="width:30%"><div class="bar"><i style="width: {{ '%.0f' % (q.rate*100) }}%"></i></div></td><td style="width:60px">{{ q.mentions }}/{{ q.total }}</td></tr>{% endfor %}
+  </table></div>
+  <details style="margin-top:12px"><summary>Read the raw answers ({{ answers|length }})</summary>
+    {% for a in answers %}<div style="margin:12px 0">
+      <div class="small"><span class="tag {{ 'pass' if a.mentioned else ('fail' if a.error else 'skip') }}">{{ 'named' if a.mentioned else ('error' if a.error else 'not named') }}</span> {{ a.question }} <span class="muted">#{{ a.attempt }}</span></div>
+      <div class="body small">{{ a.error or a.answer }}</div></div>{% endfor %}
+  </details>
+</div>
+{% endif %}
+
+<div class="panel"><h2>All runs</h2><table>
+  {% for r in runs %}<tr><td><a href="?run={{ r.id }}">#{{ r.id }} {{ r.label }}</a></td><td class="muted small hide-sm">{{ r.provider }}</td><td class="muted small">{{ r.started_at[:10] }}</td><td>{{ r.mentions or 0 }}/{{ r.valid or 0 }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

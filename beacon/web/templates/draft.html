@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}#{{ d.id }} · {{ profile.name }}{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="muted small">#{{ d.id }} · {{ d.kind }} · by {{ d.created_by }} · <span class="tag {{ d.status }}">{{ d.status }}</span> <span class="tag {{ d.critic_verdict }}">critic: {{ d.critic_verdict }}</span></div>
+  <h2 style="margin-top:8px">{{ d.title }}</h2>
+  <div class="body">{{ d.body }}</div>
+  {% if d.fact_ids %}
+  <details style="margin-top:10px"><summary>Facts this draft says it uses ({{ d.fact_ids|length }})</summary>
+    <ul class="small">{% for f in d.fact_ids %}<li><code>{{ f }}</code> {{ facts.get(f, '(unknown fact)') }}</li>{% endfor %}</ul>
+  </details>
+  {% endif %}
+</div>
+
+{% set c = d.critic %}
+<div class="panel">
+  <h2>Critic report</h2>
+  {% if not c %}
+    <p class="muted">Not checked yet.</p>
+  {% else %}
+    {% if c.llm_error %}<p class="notice small">Claim check didn't run: {{ c.llm_error }}. Rule checks below still apply.</p>{% endif %}
+    {% if c.policy %}<h3 class="small muted">Policy</h3><ul class="issues">
+      {% for i in c.policy %}<li><span class="tag {{ i.severity }}">{{ i.severity }}</span> {{ i.reason }}{% if i.excerpt %} <span class="muted small">“…{{ i.excerpt }}…”</span>{% endif %}</li>{% endfor %}
+    </ul>{% endif %}
+    {% if c.hard_facts %}<h3 class="small muted">Numbers and contact details not in the facts</h3><ul class="issues">
+      {% for h in c.hard_facts %}<li><span class="tag fail">{{ h.kind }}</span> <code>{{ h.value }}</code> {{ h.reason }}</li>{% endfor %}
+    </ul>{% endif %}
+    {% if c.claims %}<h3 class="small muted">Claims ({{ c.claims|selectattr('supported')|list|length }}/{{ c.claims|length }} supported)</h3>
+      <div class="table-scroll"><table>
+      {% for cl in c.claims %}<tr>
+        <td style="width:110px"><span class="tag {{ 'pass' if cl.supported else 'fail' }}">{{ 'supported' if cl.supported else 'unsupported' }}</span></td>
+        <td>{{ cl.claim }}<div class="muted small">{{ cl.reason }}{% if cl.fact_ids %} · {{ cl.fact_ids|join(', ') }}{% endif %}</div></td>
+      </tr>{% endfor %}
+      </table></div>
+    {% endif %}
+    {% if not c.policy and not c.hard_facts and not c.claims %}<p class="muted">No issues found.</p>{% endif %}
+  {% endif %}
+</div>
+
+{% if d.status != 'published' %}
+<div class="panel">
+  <h2>Decide</h2>
+  {% if profile.regulated %}<p class="notice small">Regulated profile: approving records your sign-off, but Beacon will never publish this. The client posts it themselves.</p>{% endif %}
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="note">Note {% if d.critic_verdict in ['flagged', 'unchecked'] %}(required to approve a {{ d.critic_verdict }} draft){% else %}(optional){% endif %}</label>
+    <input id="note" type="text" name="note" maxlength="500">
+    <div class="actions">
+      {% if d.status in ['pending', 'rejected'] %}<button class="primary" formaction="/c/{{ profile.id }}/drafts/{{ d.id }}/approve">Approve</button>{% endif %}
+      {% if d.status != 'rejected' %}<button class="danger" formaction="/c/{{ profile.id }}/drafts/{{ d.id }}/reject">Reject</button>{% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="panel">
+  <details {% if d.critic_verdict == 'flagged' %}open{% endif %}>
+    <summary>Edit this draft</summary>
+    <form method="post" action="/c/{{ profile.id }}/drafts/{{ d.id }}/edit">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label for="title">Title</label><input id="title" type="text" name="title" value="{{ d.title }}" required>
+      <label for="body">Body</label><textarea id="body" name="body" required>{{ d.body }}</textarea>
+      <label for="enote">What did you change? (optional)</label><input id="enote" type="text" name="note" maxlength="500">
+      <div class="actions"><button class="primary">Save and re-check</button><span class="muted small">Saving sends it back to pending.</span></div>
+    </form>
+  </details>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2>History</h2>
+  <table>
+  {% for x in decisions %}<tr><td class="muted small" style="width:170px">{{ x.at.replace('T', ' ')[:16] }}</td><td><span class="tag">{{ x.action }}</span></td><td>{{ x.actor }}</td><td class="muted small hide-sm">{{ x.note or '' }}</td></tr>
+  {% else %}<tr><td class="muted">No decisions yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

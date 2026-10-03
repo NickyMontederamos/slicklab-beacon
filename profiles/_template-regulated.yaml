@@ -1,0 +1,28 @@
+# Template for a regulated professional (e.g. a lawyer or notary).
+# Beacon will draft and critic-check content, but NEVER publishes for this profile.
+# Every draft must end with "This is general information, not legal advice."
+# Fill in ONLY facts the professional has confirmed in writing.
+id: example-attorney
+name: Atty. Example Name
+aliases: []
+category: Law office
+website: null                   # no website yet is fine
+regulated: true
+owner_is_operator: false
+consent:
+  granted_by: Atty. Example Name
+  date: 2026-10-01
+  method: signed letter
+  reference: consents/example-attorney.pdf
+contact:
+  phone: null
+  address: null
+hours: []
+services: []
+tone: Formal, plain, careful. No self-praise.
+facts: []
+forbidden_phrases: [win your case, guaranteed]
+visibility:
+  runs_per_question: 3
+  questions:
+    - Where can I find a lawyer for a land title problem in Cebu?

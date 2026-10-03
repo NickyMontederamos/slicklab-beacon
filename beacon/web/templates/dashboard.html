@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.name }}{% endblock %}
+{% block content %}
+<div class="grid">
+  <a class="panel stat" href="/c/{{ profile.id }}/inbox"><div class="n">{{ counts.pending }}</div><div class="l">Drafts waiting for you</div></a>
+  <div class="panel stat"><div class="n">{{ counts.approved }}</div><div class="l">Approved, not yet published</div></div>
+  <a class="panel stat" href="/c/{{ profile.id }}/audit">
+    {% if audit %}<div class="n">{{ audit.failed }}</div><div class="l">Failing audit checks ({{ audit.at[:10] }})</div>
+    {% else %}<div class="n">–</div><div class="l">No audit yet</div>{% endif %}</a>
+  <a class="panel stat" href="/c/{{ profile.id }}/visibility">
+    {% if latest %}<div class="n">{{ '%.0f' % (latest.rate * 100) }}%</div><div class="l">Named in AI answers ({{ latest.run.label }})</div>
+    {% else %}<div class="n">–</div><div class="l">No visibility run yet</div>{% endif %}</a>
+</div>
+
+{% if runs %}
+<div class="panel">
+  <h2>AI visibility over time</h2>
+  <table>
+    {% for r in runs|reverse %}
+    {% set rate = (r.mentions or 0) / r.valid if r.valid else 0 %}
+    <tr><td style="width:30%">{{ r.label }} <span class="muted small">#{{ r.id }} · {{ r.started_at[:10] }}</span></td>
+      <td><div class="bar"><i style="width: {{ '%.0f' % (rate * 100) }}%"></i></div></td>
+      <td style="width:90px">{{ '%.0f' % (rate * 100) }}% <span class="muted small">({{ r.mentions or 0 }}/{{ r.valid or 0 }})</span></td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2>Recent activity</h2>
+  <table>
+  {% for e in events %}
+    <tr><td class="muted small" style="width:180px">{{ e.at.replace('T', ' ')[:16] }}</td><td>{{ e.kind }}</td><td class="muted small hide-sm">{{ e.actor }}</td></tr>
+  {% else %}
+    <tr><td class="muted">Nothing yet. Run <code>beacon audit {{ profile.id }}</code> to start.</td></tr>
+  {% endfor %}
+  </table>
+</div>
+{% endblock %}

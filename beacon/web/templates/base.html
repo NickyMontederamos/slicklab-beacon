@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Beacon{% endblock %} · SlickLab Beacon</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="/">SlickLab <span>Beacon</span></a>
+  <div class="spacer"></div>
+  {% if user %}
+    <span class="muted small">{{ user.name }}{% if user.role == 'admin' %} · admin{% endif %}</span>
+    <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link small">Log out</button></form>
+  {% endif %}
+</div></header>
+<main class="wrap">
+  {% if flash %}<div class="flash {{ flash.kind }}">{{ flash.message }}</div>{% endif %}
+  {% if profile is defined %}
+    <h1>{{ profile.name }}</h1>
+    <div class="muted small">{{ profile.category }}{% if profile.regulated %} · <strong>Regulated: draft-only, never auto-published</strong>{% endif %}</div>
+    <nav class="sub">
+      {% set p = request.url.path %}
+      <a href="/c/{{ profile.id }}" class="{{ 'on' if p == '/c/' ~ profile.id }}">Overview</a>
+      <a href="/c/{{ profile.id }}/inbox" class="{{ 'on' if '/inbox' in p or '/drafts' in p }}">Inbox</a>
+      <a href="/c/{{ profile.id }}/audit" class="{{ 'on' if '/audit' in p }}">Audit</a>
+      <a href="/c/{{ profile.id }}/visibility" class="{{ 'on' if '/visibility' in p }}">AI visibility</a>
+    </nav>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

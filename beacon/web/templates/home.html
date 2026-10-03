@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Clients{% endblock %}
+{% block content %}
+<h1>Clients</h1>
+<p class="muted">Each client has its own profile and its own isolated data.</p>
+<div class="panel table-scroll">
+<table>
+  <tr><th>Client</th><th>Pending</th><th class="hide-sm">Approved</th><th class="hide-sm">Published</th><th></th></tr>
+  {% for c in clients %}
+  <tr>
+    <td><a href="/c/{{ c.profile.id }}">{{ c.profile.name }}</a>
+      {% if c.profile.regulated %}<span class="tag warn">regulated</span>{% endif %}
+      <div class="muted small">{{ c.profile.category }}</div></td>
+    <td>{% if c.counts.pending %}<span class="tag pending">{{ c.counts.pending }}</span>{% else %}0{% endif %}</td>
+    <td class="hide-sm">{{ c.counts.approved }}</td>
+    <td class="hide-sm">{{ c.counts.published }}</td>
+    <td><a href="/c/{{ c.profile.id }}/inbox">Review →</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">No profiles yet. Add a YAML file to the profiles folder.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Audit · {{ profile.name }}{% endblock %}
+{% block content %}
+{% if not audits %}
+<div class="panel"><p class="muted">No audits yet. Run <code>beacon audit {{ profile.id }}</code>.</p></div>
+{% else %}
+{% set a = audits[0] %}
+<div class="panel">
+  <h2>Latest audit <span class="muted small">#{{ a.id }} · {{ a.at.replace('T', ' ')[:16] }} UTC</span></h2>
+  <p><span class="tag pass">{{ a.passed }} pass</span> <span class="tag warn">{{ a.warned }} warn</span> <span class="tag fail">{{ a.failed }} fail</span></p>
+  <div class="table-scroll"><table>
+    {% for r in a.results %}<tr><td style="width:70px"><span class="tag {{ r.status }}">{{ r.status }}</span></td><td style="width:30%">{{ r.label }}</td><td class="small">{{ r.detail }}</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% if audits|length > 1 %}
+<div class="panel"><h2>Earlier audits</h2><table>
+  {% for x in audits[1:] %}<tr><td>#{{ x.id }}</td><td class="muted small">{{ x.at.replace('T', ' ')[:16] }}</td><td>{{ x.passed }} pass · {{ x.warned }} warn · {{ x.failed }} fail</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% endif %}
+{% endblock %}

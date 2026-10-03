@@ -1,0 +1,44 @@
+# Copy to profiles/<client-id>.yaml. Files starting with "_" are ignored.
+id: example-business            # lowercase, digits, hyphens; must match the file name
+name: Example Business
+aliases: []
+category: Bakery
+website: https://example.com    # or null if the business has no website
+regulated: false                # true for lawyers, notaries etc. -> draft-only forever
+owner_is_operator: false        # false = you run Beacon for someone else -> consent required
+
+consent:                        # required when owner_is_operator is false
+  granted_by: Owner Full Name
+  date: 2026-10-01
+  method: signed letter         # or "email"
+  reference: consents/example-business.pdf
+
+contact:
+  phone: "+63 900 000 0000"
+  email: null
+  address:
+    street: 123 Example St, Barangay Sample
+    locality: Cebu City
+    region: Cebu
+    postal_code: "6000"
+    country: PH
+  google_maps_url: null
+  google_place_id: null
+
+hours:
+  - {days: [Mo, Tu, We, Th, Fr], opens: "09:00", closes: "18:00"}
+
+services:
+  - {name: Custom cakes, description: Made to order with 3 days' notice.}
+
+tone: Warm and simple.
+
+facts:                          # only verified facts; ids must be unique
+  - {id: f-1, text: Example Business has been open since 2019.}
+
+forbidden_phrases: []           # words the client never wants used
+
+visibility:
+  runs_per_question: 3
+  questions:                    # up to 20 realistic customer questions
+    - Where can I order a custom cake in Cebu City?

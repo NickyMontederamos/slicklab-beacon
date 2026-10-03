@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Inbox · {{ profile.name }}{% endblock %}
+{% block content %}
+<nav class="sub">
+  {% for s in ['pending', 'approved', 'rejected', 'published', 'all'] %}
+    <a href="?status={{ s }}" class="{{ 'on' if status == s }}">{{ s|capitalize }}{% if s in counts %} ({{ counts[s] }}){% endif %}</a>
+  {% endfor %}
+</nav>
+<div class="panel table-scroll">
+<table>
+  <tr><th>#</th><th>Draft</th><th>Critic</th><th class="hide-sm">Status</th></tr>
+  {% for d in drafts %}
+  <tr>
+    <td class="muted">{{ d.id }}</td>
+    <td><a href="/c/{{ profile.id }}/drafts/{{ d.id }}">{{ d.title }}</a>
+      <div class="muted small">{{ d.kind }} · {{ d.body[:110] }}{% if d.body|length > 110 %}…{% endif %}</div></td>
+    <td><span class="tag {{ d.critic_verdict }}">{{ d.critic_verdict }}</span></td>
+    <td class="hide-sm"><span class="tag {{ d.status }}">{{ d.status }}</span></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4" class="muted">Nothing here. New drafts come from <code>beacon draft {{ profile.id }}</code>.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

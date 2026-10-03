@@ -1,0 +1,60 @@
+# Profile #1 - SlickLab.Digital (operator's own business).
+# Every fact here is something the agents may say. If it's not here, they can't say it.
+# TODO(Nicole): check each line, then add services and facts you can stand behind.
+id: slicklab-digital
+name: SlickLab.Digital
+aliases: [SlickLab, Slicklab Digital]
+category: Software and web development studio
+website: https://slicklab.digital
+regulated: false
+owner_is_operator: true
+
+contact:
+  phone: "+63 945 356 6294"
+  address:
+    street: Salinas Dr, Ucma Village
+    locality: Cebu City
+    region: Cebu
+    postal_code: "6000"
+    country: PH
+  google_maps_url: null    # TODO: paste your Google Business Profile share link
+  google_place_id: null    # optional: makes the Google check exact
+
+hours:
+  - {days: [Mo, Tu, We, Th, Fr], opens: "07:00", closes: "19:00"}
+  - {days: [Sa, Su], opens: "07:00", closes: "15:00"}
+
+services:
+  - name: Web apps and websites
+    description: Built and shipped end-to-end for local businesses and institutions.
+  - name: SlickCaption
+    description: Live-caption app.
+
+tone: Plain, friendly English. Practical, no hype.
+
+facts:
+  - id: f-location
+    text: SlickLab.Digital is based in Cebu City, Philippines.
+  - id: f-clients
+    text: SlickLab.Digital has built web projects for local government and educational institution clients.
+  - id: f-products
+    text: SlickLab.Digital's products include SlickCaption, SlickNow.Learning and SecureExam.
+
+forbidden_phrases: []
+
+visibility:
+  runs_per_question: 3
+  location_hint: Cebu City, Philippines
+  questions:
+    - Who can build a website for my small business in Cebu City?
+    - What are good web developers in Cebu City?
+    - I need a custom web app built in Cebu. Who should I talk to?
+    - Which software studios in Cebu build apps for schools?
+    - Is there a local developer in Cebu who builds systems for LGUs?
+    - Recommend a web development company in Cebu City.
+    - Who makes live captioning apps in the Philippines?
+    - Where can I get an online exam platform built in the Philippines?
+    - Small web dev studio in Cebu open on weekends?
+    - Who can set up Google Business Profile and website schema for my shop in Cebu?
+    - What is SlickLab.Digital?
+    - Best freelance full-stack developers in Cebu City?

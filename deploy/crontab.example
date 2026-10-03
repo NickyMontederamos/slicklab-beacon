@@ -1,0 +1,5 @@
+# crontab -u beacon -e
+# Weekly audit (Monday 06:10, server time). Audits are free - no API calls.
+10 6 * * 1  cd /opt/beacon && .venv/bin/beacon audit slicklab-digital >> data/cron.log 2>&1
+# Monthly visibility run (1st of month, 06:20). This one costs API credits.
+20 6 1 * *  cd /opt/beacon && .venv/bin/beacon visibility run slicklab-digital --label "monthly-$(date +\%Y-\%m)" --yes >> data/cron.log 2>&1
