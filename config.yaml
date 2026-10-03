@@ -1,0 +1,32 @@
+# SlickLab Beacon Configuration
+# Settings for SEO/GEO visibility monitoring
+
+site_url: https://slicklab.digital
+gbp_url: https://share.google/24eamcPyITTzmw3VZ
+gbp_cid: "10606483454430947215"
+
+expected_contact:
+  address: "Salinas Dr, Ucma Village, 6000 Cebu"
+  phone: "+63 945 356 6294"
+  street_address: "Salinas Dr, Ucma Village"
+  locality: "Cebu City"
+  postal_code: "6000"
+  country: "PH"
+
+opening_hours:
+  - day: "Mon-Fri"
+    opens: "07:00"
+    closes: "19:00"
+  - day: "Sat-Sun"
+    opens: "07:00"
+    closes: "15:00"
+
+geocoordinates:
+  latitude: "10.3100"
+  longitude: "123.8800"
+
+verification_urls:
+  - https://slicklab.digital/
+  - https://slicklab.digital/contact/
+
+check_interval: "0 6 * * *"  # Daily 6am PST
