@@ -54,6 +54,17 @@ beacon visibility compare slicklab-digital 1 2
 
 **Publish** writes files to `data/clients/<id>/publish/<timestamp>/` (`faq.md`, `faq-schema.jsonld`, `manifest.json` with who approved what). You paste those into the site. Beacon never posts anywhere by itself.
 
+## Free models for visibility runs
+
+Visibility runs use a **free-tier model**, so measuring costs nothing. Drafting and fact-checking still use Claude (free models aren't reliable enough to fact-check).
+
+1. Get a free key from OpenRouter, Groq or Gemini (or run Ollama locally, no key).
+2. In `.env`: `BEACON_VISIBILITY_PROVIDER=openrouter` (or `groq`/`gemini`/`ollama`), the matching `*_API_KEY`, and `BEACON_FREE_MODEL`.
+3. Not sure which model? `beacon free-models` lists the free OpenRouter ones. Names change often.
+4. Click **Run measurement** on the AI visibility tab, or `beacon visibility run <id> --label baseline`.
+
+**Caveat:** a free model only tells you how *that model* answers, not ChatGPT or Gemini. Use the **same model** for before and after. Beacon records the model on every run and warns you if you compare runs from different models.
+
 ## Reading the visibility numbers honestly
 
 AI answers vary from run to run. So each question is asked several times (default 3), and `compare` runs a significance test. If it says *"No clear change yet"*, the difference could be noise, so don't sell it as a win. With 12 questions × 3 runs = 36 answers, you need a fairly big jump (roughly 20-25 points) to be sure. Use `--runs 5` for tighter numbers.

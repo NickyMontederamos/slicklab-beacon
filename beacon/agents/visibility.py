@@ -46,6 +46,7 @@ def run(
     if not questions:
         raise ValueError("Profile has no visibility.questions.")
     runs = runs or profile.visibility.runs_per_question
+    web_search = web_search and getattr(llm, "supports_web", True)
     provider = f"{llm.name}{'+web' if web_search else ''}"
     run_id = store.start_visibility_run(label, provider, llm.model, runs)
     store.log("visibility-agent", "visibility.start", {"run_id": run_id, "label": label})
@@ -121,6 +122,15 @@ def compare(store: Store, before_id: int, after_id: int) -> dict:
         verdict = f"Real change: visibility {verdict} (p={p_value:.3f})."
     else:
         verdict = f"No clear change yet (p={p_value:.2f}); could be run-to-run noise."
+    ra, rb = a["run"], b["run"]
+    same = (ra["provider"], ra["model"]) == (rb["provider"], rb["model"])
+    warning = None
+    if not same:
+        warning = (
+            f"These runs used different models ({ra['provider']}/{ra['model']} vs "
+            f"{rb['provider']}/{rb['model']}), so the difference may not come from your "
+            "changes. Re-run with the same model to compare fairly."
+        )
     return {
         "before": a,
         "after": b,
@@ -128,6 +138,7 @@ def compare(store: Store, before_id: int, after_id: int) -> dict:
         "p_value": p_value,
         "verdict": verdict,
         "questions": rows,
+        "warning": warning,
     }
 
 

@@ -12,7 +12,7 @@ from .agents import audit as audit_agent
 from .agents import content, critic, visibility
 from .auth import Users
 from .config import get_settings
-from .llm import get_llm
+from .llm import LLMError, get_llm, get_visibility_llm, list_free_openrouter_models
 from .policy import PolicyError, check_approval
 from .profile import find_profile, list_profiles
 from .publish import publish as do_publish
@@ -190,16 +190,34 @@ def visibility_group() -> None:
 @click.option("--yes", is_flag=True, help="Skip the cost confirmation.")
 def visibility_run(client_id: str, label: str, runs: int | None, web: bool, yes: bool) -> None:
     s, profile, store = _ctx(client_id)
-    llm = get_llm(s)
+    try:
+        llm = get_visibility_llm(s)
+    except (LLMError, ValueError) as e:
+        raise click.ClickException(str(e)) from e
     runs = runs or profile.visibility.runs_per_question
     calls = runs * len(profile.visibility.questions)
-    if llm.name != "fake" and not yes:
+    if not getattr(llm, "free", False) and not yes:
         click.confirm(f"This makes {calls} API calls to {llm.model}. Continue?", abort=True)
     with click.progressbar(length=calls, label="Asking") as bar:
         run_id = visibility.run(
             profile, llm, store, label, runs, web, progress=lambda _: bar.update(1)
         )
     _print_summary(visibility.summarize(store, run_id))
+
+
+@cli.command("free-models")
+def free_models_cmd() -> None:
+    """List free OpenRouter models (names change often). Put your pick in BEACON_FREE_MODEL."""
+    try:
+        models = list_free_openrouter_models()
+    except Exception as e:  # noqa: BLE001
+        raise click.ClickException(f"Couldn't reach OpenRouter: {e}") from e
+    for m in models[:40]:
+        click.echo(f"{m['id']:<60} context {m['context']}")
+    click.echo(
+        "\nSet BEACON_VISIBILITY_PROVIDER=openrouter, OPENROUTER_API_KEY and "
+        "BEACON_FREE_MODEL=<one of the above> in .env."
+    )
 
 
 def _print_summary(summary: dict) -> None:
@@ -232,6 +250,8 @@ def visibility_report(client_id: str, run_id: int | None) -> None:
 def visibility_compare(client_id: str, before_id: int, after_id: int) -> None:
     _, _, store = _ctx(client_id)
     c = visibility.compare(store, before_id, after_id)
+    if c["warning"]:
+        click.secho(f"WARNING: {c['warning']}", fg="yellow")
     click.echo(
         f"Before {c['before']['rate']:.0%} -> after {c['after']['rate']:.0%} "
         f"({c['delta']:+.0%}). {c['verdict']}"

@@ -172,3 +172,33 @@ def test_audit_and_publish_buttons(env, monkeypatch):
     store.decide(i, "approve", "x")
     client.post("/c/acme/run/publish", data={"csrf": csrf})
     assert store.get_draft(i)["status"] == "published"
+
+
+def test_visibility_button_runs_measurement(env):
+    s, client, users = env
+    csrf = _login(client, users.add("Admin", "admin"))
+    page = client.get("/c/acme/visibility").text
+    assert "Run measurement" in page and 'value="baseline"' in page
+    client.post("/c/acme/run/visibility", data={"csrf": csrf, "label": ""})
+    client.app.state.jobs.join_all()
+    runs = Store(s.client_dir("acme")).visibility_runs()
+    assert len(runs) == 1 and runs[0]["label"] == "baseline" and runs[0]["status"] == "done"
+    assert 'value="run-2"' in client.get("/c/acme/visibility").text
+
+
+def test_visibility_button_missing_config_explains(env, monkeypatch):
+    import dataclasses
+
+    s, client, users = env
+    client.app.state.settings = dataclasses.replace(s, llm="claude", visibility_provider="groq")
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    csrf = _login(client, users.add("Admin", "admin"))
+    r = client.post("/c/acme/run/visibility", data={"csrf": csrf}, follow_redirects=True)
+    assert "GROQ_API_KEY" in r.text
+
+
+def test_visibility_button_admin_only(env):
+    _, client, users = env
+    csrf = _login(client, users.add("Owner", "client", "acme"))
+    assert client.post("/c/acme/run/visibility", data={"csrf": csrf}).status_code == 403
+    assert "Run measurement" not in client.get("/c/acme/visibility").text

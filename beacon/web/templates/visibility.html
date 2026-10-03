@@ -2,8 +2,19 @@
 {% block title %}AI visibility · {{ profile.name }}{% endblock %}
 {% block content %}
 <p class="help"><strong>AI visibility</strong> shows how often AI assistants (like ChatGPT or Claude) name the business when someone asks a real customer question. Each question is asked several times because answers vary. Run one <strong>before</strong> you change your site, and another after, then compare.</p>
+{% if is_admin %}
+<div class="panel">
+  <h2>Run a new measurement</h2>
+  <p class="help">Asks {{ profile.visibility.questions|length }} customer questions, {{ profile.visibility.runs_per_question }} times each, on a free AI model and records whether {{ profile.name }} is named. Free to run, takes a few minutes. Note: it measures that one model, not every AI assistant. Always use the same model when comparing before and after.</p>
+  <form method="post" action="/c/{{ profile.id }}/run/visibility" class="formrow">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div><label for="label">Name this run</label><input id="label" type="text" name="label" value="{{ default_label }}" maxlength="60"></div>
+    <div style="flex:0 0 auto"><button class="primary" {{ 'disabled' if 'visibility' in running }}>{{ 'Running…' if 'visibility' in running else 'Run measurement' }}</button></div>
+  </form>
+</div>
+{% endif %}
 {% if not runs %}
-<div class="panel"><p class="muted">No runs yet. Start a baseline with<br><code>beacon visibility run {{ profile.id }} --label baseline</code></p></div>
+<div class="panel"><p class="muted">No runs yet.{% if is_admin %} Click "Run measurement" above to record your baseline.{% endif %}</p></div>
 {% else %}
 <div class="panel">
   <h2>Compare two runs</h2>
@@ -15,6 +26,7 @@
     <button>Compare</button>
   </form>
   {% if comparison %}
+    {% if comparison.warning %}<p class="notice small">{{ comparison.warning }}</p>{% endif %}
     <p><strong>{{ '%.0f' % (comparison.before.rate*100) }}% → {{ '%.0f' % (comparison.after.rate*100) }}%</strong> ({{ '%+.0f' % (comparison.delta*100) }} pts). {{ comparison.verdict }}</p>
     <div class="table-scroll"><table>
       <tr><th>Question</th><th>Before</th><th>After</th></tr>

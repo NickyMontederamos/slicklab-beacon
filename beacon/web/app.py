@@ -24,7 +24,7 @@ from ..agents import content, critic, visibility
 from ..auth import Users, can_access
 from ..config import Settings, get_settings
 from ..jobs import Jobs
-from ..llm import LLMError, get_llm
+from ..llm import LLMError, get_llm, get_visibility_llm
 from ..policy import PolicyError, check_approval
 from ..profile import Profile, find_profile, list_profiles
 from ..publish import publish as do_publish
@@ -133,6 +133,15 @@ def _next_steps(
     """Plain-language to-do list: the first item is what to do now."""
     base = f"/c/{profile.id}"
     steps = []
+    if "visibility" in running:
+        steps.append(
+            {
+                "text": "Beacon is asking AI assistants your questions. This takes a few "
+                "minutes. Refresh to see results.",
+                "link": f"{base}/visibility",
+                "cta": "See progress",
+            }
+        )
     if "draft" in running:
         steps.append(
             {
@@ -276,6 +285,33 @@ async def run_job(request: Request):
         flash(request, f"Exported to {out.name}. Files are in data/clients/{profile.id}/publish/.")
         return RedirectResponse(f"/c/{profile.id}/inbox?status=published", 303)
 
+    if kind == "visibility":
+        existing = store.visibility_runs()
+        label = form.get("label", "").strip()[:60] or (
+            "baseline" if not existing else f"run-{len(existing) + 1}"
+        )
+        try:
+            llm = get_visibility_llm(s)
+        except (LLMError, ValueError) as e:
+            flash(request, str(e), "error")
+            return RedirectResponse(back, 303)
+
+        def work() -> dict:
+            run_id = visibility.run(profile, llm, store, label, web_search=False)
+            return {"run_id": run_id, "label": label, "model": llm.model}
+
+        started = request.app.state.jobs.start(profile.id, "visibility", store, actor, work)
+        n = len(profile.visibility.questions) * profile.visibility.runs_per_question
+        flash(
+            request,
+            f"Asking {n} questions with {llm.name}/{llm.model}. Results appear on the "
+            "AI visibility tab in a few minutes."
+            if started
+            else "A visibility run is already in progress.",
+            "ok" if started else "error",
+        )
+        return RedirectResponse(f"/c/{profile.id}/visibility", 303)
+
     raise HTTPException(404)
 
 
@@ -361,7 +397,7 @@ async def audit_view(request: Request):
 
 
 async def visibility_view(request: Request):
-    _, profile, store = _client(request)
+    user, profile, store = _client(request)
     runs = store.visibility_runs()
     run_id = request.query_params.get("run")
     summary = None
@@ -390,6 +426,9 @@ async def visibility_view(request: Request):
         summary=summary,
         answers=answers,
         comparison=comparison,
+        is_admin=user["role"] == "admin",
+        running=request.app.state.jobs.running(profile.id),
+        default_label="baseline" if not runs else f"run-{len(runs) + 1}",
     )
 
 

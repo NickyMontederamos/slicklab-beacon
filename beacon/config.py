@@ -34,6 +34,9 @@ class Settings:
     secret_key: str
     https: bool
     places_api_key: str | None
+    visibility_provider: str = "auto"
+    free_model: str | None = None
+    free_delay: float = 3.0
 
     def client_dir(self, client_id: str) -> Path:
         validate_client_id(client_id)
@@ -62,4 +65,7 @@ def get_settings() -> Settings:
         secret_key=os.environ.get("BEACON_SECRET_KEY", ""),
         https=os.environ.get("BEACON_HTTPS", "0") == "1",
         places_api_key=os.environ.get("GOOGLE_PLACES_API_KEY") or None,
+        visibility_provider=os.environ.get("BEACON_VISIBILITY_PROVIDER") or "auto",
+        free_model=os.environ.get("BEACON_FREE_MODEL") or None,
+        free_delay=float(os.environ.get("BEACON_FREE_DELAY") or 3),
     )
