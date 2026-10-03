@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Inbox · {{ profile.name }}{% endblock %}
 {% block content %}
+<p class="help"><strong>Inbox</strong> is where drafts wait for you. <strong>Pending</strong> = needs your decision. <strong>Approved</strong> = OK'd, not yet exported. <strong>Published</strong> = exported. Nothing is public until you approve it and export it.</p>
+{% if running %}<div class="notice small" style="margin-bottom:14px">Beacon is writing drafts. Refresh in a minute.</div>{% endif %}
 <nav class="sub">
   {% for s in ['pending', 'approved', 'rejected', 'published', 'all'] %}
     <a href="?status={{ s }}" class="{{ 'on' if status == s }}">{{ s|capitalize }}{% if s in counts %} ({{ counts[s] }}){% endif %}</a>
@@ -18,7 +20,7 @@
     <td class="hide-sm"><span class="tag {{ d.status }}">{{ d.status }}</span></td>
   </tr>
   {% else %}
-  <tr><td colspan="4" class="muted">Nothing here. New drafts come from <code>beacon draft {{ profile.id }}</code>.</td></tr>
+  <tr><td colspan="4" class="muted">Nothing here yet.{% if is_admin %} Go to <a href="/c/{{ profile.id }}">Overview</a> and click "Generate drafts".{% endif %}</td></tr>
   {% endfor %}
 </table>
 </div>

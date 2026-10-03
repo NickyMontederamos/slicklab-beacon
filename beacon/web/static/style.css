@@ -67,3 +67,14 @@ code { font-size: 13px; background: var(--bg); padding: 1px 5px; border-radius: 
 h3 { font-size: 13px; margin: 14px 0 6px; }
 a.panel { color: inherit; display: block; }
 a.panel:hover { text-decoration: none; border-color: var(--accent); }
+.help { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+.next { border-left: 4px solid var(--accent); }
+.next ol { margin: 0; padding-left: 20px; }
+.next li { margin: 8px 0; }
+.next li:first-child { font-weight: 600; }
+.next .cta { margin-left: 6px; font-weight: 400; white-space: nowrap; }
+.inline { display: inline; }
+.formrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.formrow > div { flex: 1 1 140px; }
+button[disabled] { opacity: .5; cursor: not-allowed; }
+.err { color: var(--bad); }

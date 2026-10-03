@@ -11,7 +11,7 @@ You give it a profile (one YAML file of verified facts about a business). Beacon
 | **Critic** | Checks every claim in a draft against the facts. Flags anything unsupported, plus review/impersonation language and phone numbers, prices or years that aren't in the facts. | Yes, plus rule checks |
 | **Visibility** | Asks AI assistants ~20 realistic customer questions, several times each, and records how often the business is named. Re-run after changes to see if anything worked. | Yes |
 
-Drafts land in a web **inbox** (`beacon.slicklab.digital`) where you or the client clicks **Approve**, **Edit** or **Reject**.
+The web page has an **Overview** with a "What to do next" list and buttons for Run audit, Generate drafts and Publish approved (admins only). Drafts land in a web **inbox** (`beacon.slicklab.digital`) where you or the client clicks **Approve**, **Edit** or **Reject**.
 
 ## What it won't do (enforced in code, not just prompts)
 
@@ -86,6 +86,12 @@ sudo -u beacon .venv/bin/beacon user add Nicole --role admin
 
 Optional schedules are in `deploy/crontab.example` (weekly audit, monthly visibility run).
 **Back up `data/`.** It holds every approval record.
+
+## Update the live server (one line)
+
+```bash
+sudo sh /opt/beacon/deploy/update.sh
+```
 
 ## Settings (`.env`)
 

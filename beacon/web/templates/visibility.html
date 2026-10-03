@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}AI visibility · {{ profile.name }}{% endblock %}
 {% block content %}
+<p class="help"><strong>AI visibility</strong> shows how often AI assistants (like ChatGPT or Claude) name the business when someone asks a real customer question. Each question is asked several times because answers vary. Run one <strong>before</strong> you change your site, and another after, then compare.</p>
 {% if not runs %}
 <div class="panel"><p class="muted">No runs yet. Start a baseline with<br><code>beacon visibility run {{ profile.id }} --label baseline</code></p></div>
 {% else %}

@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Audit · {{ profile.name }}{% endblock %}
 {% block content %}
+<p class="help"><strong>Audit</strong> checks that your website, its hidden business data (schema), llms.txt and Google listing all say the same name, address, phone and hours as your profile. <span class="tag fail">fail</span> = fix on your site. <span class="tag warn">warn</span> = worth fixing. <span class="tag skip">skip</span> = couldn't check.</p>
+{% if is_admin %}<form method="post" action="/c/{{ profile.id }}/run/audit" class="actions" style="margin:0 0 16px"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="primary">Run audit now</button><span class="muted small">Free. Takes a few seconds.</span></form>{% endif %}
 {% if not audits %}
-<div class="panel"><p class="muted">No audits yet. Run <code>beacon audit {{ profile.id }}</code>.</p></div>
+<div class="panel"><p class="muted">No audits yet.{% if is_admin %} Click "Run audit now".{% endif %}</p></div>
 {% else %}
 {% set a = audits[0] %}
 <div class="panel">

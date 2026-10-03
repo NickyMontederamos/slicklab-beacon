@@ -2,7 +2,7 @@
 {% block title %}#{{ d.id }} · {{ profile.name }}{% endblock %}
 {% block content %}
 <div class="panel">
-  <div class="muted small">#{{ d.id }} · {{ d.kind }} · by {{ d.created_by }} · <span class="tag {{ d.status }}">{{ d.status }}</span> <span class="tag {{ d.critic_verdict }}">critic: {{ d.critic_verdict }}</span></div>
+  <div class="muted small">#{{ d.id }} · {{ d.kind }} · by {{ d.created_by }} · <span class="tag {{ d.status }}">{{ d.status }}</span> <span class="tag {{ d.critic_verdict }}">fact check: {{ d.critic_verdict }}</span></div>
   <h2 style="margin-top:8px">{{ d.title }}</h2>
   <div class="body">{{ d.body }}</div>
   {% if d.fact_ids %}
@@ -14,7 +14,8 @@
 
 {% set c = d.critic %}
 <div class="panel">
-  <h2>Critic report</h2>
+  <h2>Fact check</h2>
+  <p class="help">The critic reads this draft against your profile. Green = backed by a fact. Red = not backed, so fix it or remove it.</p>
   {% if not c %}
     <p class="muted">Not checked yet.</p>
   {% else %}
@@ -39,7 +40,8 @@
 
 {% if d.status != 'published' %}
 <div class="panel">
-  <h2>Decide</h2>
+  <h2>Your decision</h2>
+  <p class="help"><strong>Approve</strong> = OK to publish. <strong>Reject</strong> = don't use it. Want changes? Use <strong>Edit this draft</strong> below. Edits go back to pending.</p>
   {% if profile.regulated %}<p class="notice small">Regulated profile: approving records your sign-off, but Beacon will never publish this. The client posts it themselves.</p>{% endif %}
   <form method="post">
     <input type="hidden" name="csrf" value="{{ csrf }}">

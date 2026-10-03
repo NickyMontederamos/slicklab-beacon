@@ -1,14 +1,56 @@
 {% extends "base.html" %}
 {% block title %}{{ profile.name }}{% endblock %}
 {% block content %}
+{% if running %}<div class="notice small" style="margin-bottom:16px">Working in the background: {{ running|join(', ') }}. Refresh in a minute.</div>{% endif %}
+
+<div class="panel next">
+  <h2>What to do next</h2>
+  <ol>
+    {% for st in steps %}
+    <li>{{ st.text }}{% if st.link %} <a class="cta" href="{{ st.link }}">{{ st.cta }} →</a>{% endif %}</li>
+    {% endfor %}
+  </ol>
+</div>
+
+{% if is_admin %}
+<div class="panel">
+  <h2>Run something</h2>
+  <p class="help">These buttons do the work Beacon used to need the terminal for. Drafting uses your AI credits. The audit and publish are free.</p>
+  <div class="grid" style="align-items:start">
+    <form method="post" action="/c/{{ profile.id }}/run/audit">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <strong>1. Check my website</strong>
+      <p class="help">Compares your site, schema and llms.txt with your profile.</p>
+      <button class="primary">Run audit</button>
+    </form>
+    <form method="post" action="/c/{{ profile.id }}/run/draft">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <strong>2. Write drafts</strong>
+      <p class="help">Beacon writes FAQs from your facts. They land in Pending for you.</p>
+      <div class="formrow">
+        <div><label for="count">How many</label><select id="count" name="count">{% for n in [3, 5, 8, 10] %}<option {{ 'selected' if n == 5 }}>{{ n }}</option>{% endfor %}</select></div>
+        <div><label for="topic">Topic (optional)</label><input id="topic" type="text" name="topic" maxlength="200" placeholder="e.g. hours and location"></div>
+      </div>
+      <div class="actions"><button class="primary" {{ 'disabled' if 'draft' in running }}>Generate drafts</button></div>
+    </form>
+    <form method="post" action="/c/{{ profile.id }}/run/publish">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <strong>3. Export approved</strong>
+      <p class="help">{% if profile.regulated %}Not available: this is a regulated profile. Copy approved text and give it to the client.{% else %}Saves approved drafts as files you paste into the site. It never posts anywhere by itself.{% endif %}</p>
+      <button class="primary" {{ 'disabled' if profile.regulated or not counts.approved }}>Publish {{ counts.approved }} approved</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 <div class="grid">
-  <a class="panel stat" href="/c/{{ profile.id }}/inbox"><div class="n">{{ counts.pending }}</div><div class="l">Drafts waiting for you</div></a>
-  <div class="panel stat"><div class="n">{{ counts.approved }}</div><div class="l">Approved, not yet published</div></div>
+  <a class="panel stat" href="/c/{{ profile.id }}/inbox"><div class="n">{{ counts.pending }}</div><div class="l">Drafts waiting for your decision</div></a>
+  <div class="panel stat"><div class="n">{{ counts.approved }}</div><div class="l">Approved, not yet exported</div></div>
   <a class="panel stat" href="/c/{{ profile.id }}/audit">
-    {% if audit %}<div class="n">{{ audit.failed }}</div><div class="l">Failing audit checks ({{ audit.at[:10] }})</div>
+    {% if audit %}<div class="n">{{ audit.failed }}</div><div class="l">Website problems found ({{ audit.at[:10] }})</div>
     {% else %}<div class="n">–</div><div class="l">No audit yet</div>{% endif %}</a>
   <a class="panel stat" href="/c/{{ profile.id }}/visibility">
-    {% if latest %}<div class="n">{{ '%.0f' % (latest.rate * 100) }}%</div><div class="l">Named in AI answers ({{ latest.run.label }})</div>
+    {% if latest %}<div class="n">{{ '%.0f' % (latest.rate * 100) }}%</div><div class="l">of AI answers mention you ({{ latest.run.label }})</div>
     {% else %}<div class="n">–</div><div class="l">No visibility run yet</div>{% endif %}</a>
 </div>
 
@@ -30,9 +72,9 @@
   <h2>Recent activity</h2>
   <table>
   {% for e in events %}
-    <tr><td class="muted small" style="width:180px">{{ e.at.replace('T', ' ')[:16] }}</td><td>{{ e.kind }}</td><td class="muted small hide-sm">{{ e.actor }}</td></tr>
+    <tr><td class="muted small" style="width:180px">{{ e.at.replace('T', ' ')[:16] }}</td><td{% if e.kind.endswith('.error') %} class="err"{% endif %}>{{ e.kind }}{% if e.kind.endswith('.error') and e.detail %}<div class="small">{{ e.detail }}</div>{% endif %}</td><td class="muted small hide-sm">{{ e.actor }}</td></tr>
   {% else %}
-    <tr><td class="muted">Nothing yet. Run <code>beacon audit {{ profile.id }}</code> to start.</td></tr>
+    <tr><td class="muted">Nothing yet. Use "Run audit" above to start.</td></tr>
   {% endfor %}
   </table>
 </div>

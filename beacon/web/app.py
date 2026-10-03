@@ -19,12 +19,15 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from ..agents import critic, visibility
+from ..agents import audit as audit_agent
+from ..agents import content, critic, visibility
 from ..auth import Users, can_access
 from ..config import Settings, get_settings
+from ..jobs import Jobs
 from ..llm import LLMError, get_llm
 from ..policy import PolicyError, check_approval
 from ..profile import Profile, find_profile, list_profiles
+from ..publish import publish as do_publish
 from ..store import Store
 
 HERE = Path(__file__).parent
@@ -124,25 +127,160 @@ async def home(request: Request):
     return render(request, "home.html", clients=clients)
 
 
+def _next_steps(
+    profile: Profile, counts: dict, audit: dict | None, runs: list, running: list
+) -> list:
+    """Plain-language to-do list: the first item is what to do now."""
+    base = f"/c/{profile.id}"
+    steps = []
+    if "draft" in running:
+        steps.append(
+            {
+                "text": "Beacon is writing drafts right now. Refresh this page in a minute.",
+                "link": base,
+                "cta": "Refresh",
+            }
+        )
+    if audit is None:
+        steps.append(
+            {
+                "text": "Check your website first. This is free and takes a few seconds.",
+                "link": f"{base}/audit",
+                "cta": "Go to Audit",
+            }
+        )
+    elif audit["failed"]:
+        steps.append(
+            {
+                "text": f"Your last audit found {audit['failed']} problem(s) on your site. "
+                "Fix them on your website, then run the audit again.",
+                "link": f"{base}/audit",
+                "cta": "See problems",
+            }
+        )
+    if counts["pending"]:
+        steps.append(
+            {
+                "text": f"{counts['pending']} draft(s) are waiting for your decision. "
+                "Nothing goes public until you approve it.",
+                "link": f"{base}/inbox",
+                "cta": "Review drafts",
+            }
+        )
+    elif not sum(counts.values()) and "draft" not in running:
+        steps.append(
+            {
+                "text": "No drafts yet. Ask Beacon to write some FAQs from your facts.",
+                "link": f"{base}/inbox",
+                "cta": "Go to Inbox",
+            }
+        )
+    if counts["approved"]:
+        word = (
+            "can't be published by Beacon (regulated). Copy the text and post it yourself."
+            if profile.regulated
+            else "are approved and ready to export."
+        )
+        steps.append(
+            {
+                "text": f"{counts['approved']} draft(s) {word}",
+                "link": f"{base}/inbox?status=approved",
+                "cta": "Open approved",
+            }
+        )
+    if not runs:
+        steps.append(
+            {
+                "text": "Record your AI visibility baseline BEFORE you change your site, "
+                "so you can show a before and after. Run this in the terminal: "
+                f"beacon visibility run {profile.id} --label baseline",
+                "link": f"{base}/visibility",
+                "cta": "About this",
+            }
+        )
+    if not steps:
+        steps.append({"text": "You're all caught up.", "link": None, "cta": None})
+    return steps
+
+
 async def dashboard(request: Request):
-    _, profile, store = _client(request)
+    user, profile, store = _client(request)
     audits = store.audits(limit=1)
     runs = store.visibility_runs()
     latest = visibility.summarize(store, runs[0]["id"]) if runs else None
+    counts = store.counts()
+    running = request.app.state.jobs.running(profile.id)
     return render(
         request,
         "dashboard.html",
         profile=profile,
-        counts=store.counts(),
+        counts=counts,
         audit=audits[0] if audits else None,
         runs=runs[:6],
         latest=latest,
         events=store.events(15),
+        running=running,
+        is_admin=user["role"] == "admin",
+        steps=_next_steps(profile, counts, audits[0] if audits else None, runs, running),
     )
 
 
+async def run_job(request: Request):
+    """Admin-only buttons: run audit, generate drafts, publish approved."""
+    user, profile, store = _client(request)
+    if user["role"] != "admin":
+        raise HTTPException(403, "Only the Beacon operator can run this.")
+    kind = request.path_params["kind"]
+    form = await _form(request)
+    s = _settings(request)
+    actor = _actor(user)
+    back = f"/c/{profile.id}"
+
+    if kind == "audit":
+        checks = audit_agent.run_audit(profile, places_api_key=s.places_api_key)
+        audit_id = store.add_audit(audit_agent.results_as_dicts(checks))
+        store.log(actor, "audit.run", {"audit_id": audit_id})
+        fails = sum(c.status == "fail" for c in checks)
+        flash(request, f"Audit finished: {fails} problem(s) found.", "error" if fails else "ok")
+        return RedirectResponse(f"{back}/audit", 303)
+
+    if kind == "draft":
+        try:
+            count = max(1, min(10, int(form.get("count", "5"))))
+        except ValueError:
+            count = 5
+        topic = form.get("topic", "").strip()[:200] or None
+
+        def work() -> dict:
+            ids = content.generate(
+                profile, get_llm(s), store, count=count, topic=topic, actor=actor
+            )
+            return {"draft_ids": ids}
+
+        started = request.app.state.jobs.start(profile.id, "draft", store, actor, work)
+        flash(
+            request,
+            f"Writing {count} draft(s). They appear in Pending in about a minute."
+            if started
+            else "Drafts are already being written. Give it a minute.",
+            "ok" if started else "error",
+        )
+        return RedirectResponse(back, 303)
+
+    if kind == "publish":
+        try:
+            out = do_publish(profile, store, s.client_dir(profile.id) / "publish", actor)
+        except PolicyError as e:
+            flash(request, str(e), "error")
+            return RedirectResponse(back, 303)
+        flash(request, f"Exported to {out.name}. Files are in data/clients/{profile.id}/publish/.")
+        return RedirectResponse(f"/c/{profile.id}/inbox?status=published", 303)
+
+    raise HTTPException(404)
+
+
 async def inbox(request: Request):
-    _, profile, store = _client(request)
+    user, profile, store = _client(request)
     status = request.query_params.get("status", "pending")
     if status not in ("pending", "approved", "rejected", "published", "all"):
         status = "pending"
@@ -212,8 +350,14 @@ async def draft_action(request: Request):
 
 
 async def audit_view(request: Request):
-    _, profile, store = _client(request)
-    return render(request, "audit.html", profile=profile, audits=store.audits(limit=10))
+    user, profile, store = _client(request)
+    return render(
+        request,
+        "audit.html",
+        profile=profile,
+        audits=store.audits(limit=10),
+        is_admin=user["role"] == "admin",
+    )
 
 
 async def visibility_view(request: Request):
@@ -275,6 +419,7 @@ def create_app(settings: Settings | None = None) -> Starlette:
         Route("/logout", logout, methods=["POST"]),
         Route("/healthz", healthz),
         Route("/c/{client_id}", dashboard),
+        Route("/c/{client_id}/run/{kind}", run_job, methods=["POST"]),
         Route("/c/{client_id}/inbox", inbox),
         Route("/c/{client_id}/drafts/{draft_id:int}", draft_view),
         Route("/c/{client_id}/drafts/{draft_id:int}/{action}", draft_action, methods=["POST"]),
@@ -297,4 +442,5 @@ def create_app(settings: Settings | None = None) -> Starlette:
     )
     app.state.settings = settings
     app.state.users = Users(settings.auth_db)
+    app.state.jobs = Jobs()
     return app
