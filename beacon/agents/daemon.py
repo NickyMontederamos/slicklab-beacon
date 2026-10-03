@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 import click
 
 from ..agents import audit as audit_agent
+from ..agents import visibility as visibility_agent
 from ..config import get_settings
 from ..profile import find_profile, list_profiles
 from ..store import Store
@@ -24,9 +25,9 @@ from ..store import Store
 # Settings for what to check
 DEFAULT_INTERVAL = 3600  # 1 hour
 SSL_WARNING_DAYS = 30
-# VISIBILITY_DROP_THRESHOLD = 0.05  # 5% drop triggers alert
-# Visibility runs cost ~36 API calls each. Enable with ANTHROPIC_API_KEY in .env
-# Run manually: beacon visibility run <client> --label <label>
+VISIBILITY_INTERVAL = 86400  # run visibility once per day (costs API calls)
+VISIBILITY_DROP_THRESHOLD = 0.05  # alert if named-rate drops 5+ points
+# Run visibility manually: beacon visibility run <client> --label <label>
 STATE_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "daemon-state.json"
 
 
@@ -144,10 +145,68 @@ def check_profile(profile_id: str) -> dict:
     }
 
 
+def run_visibility_check(profile_id: str) -> dict | None:
+    """Run a daily visibility check and compare to the previous run.
+
+    Returns a summary dict, or None if the free provider is not
+    configured (no OPENROUTER_API_KEY / BEACON_FREE_MODEL).
+    """
+    settings = get_settings()
+    provider = settings.visibility_provider
+    # Only auto-run when a free provider is fully configured.
+    if provider not in ("openrouter", "groq", "gemini"):
+        return None
+    if not settings.free_model:
+        return None
+    import os
+
+    key_env = dict(
+        openrouter="OPENROUTER_API_KEY",
+        groq="GROQ_API_KEY",
+        gemini="GEMINI_API_KEY",
+    )[provider]
+    if not os.environ.get(key_env):
+        return None
+
+    profile = find_profile(settings.profiles_dir, profile_id)
+    store = Store(settings.client_dir(profile_id))
+    from ..llm import get_visibility_llm
+
+    llm = get_visibility_llm(settings)
+
+    label = f"daemon-{datetime.now().strftime('%Y%m%d')}"
+    run_id = visibility_agent.run(
+        profile, llm, store, label, runs=1, web_search=False
+    )
+    summary = visibility_agent.summarize(store, run_id)
+
+    # Compare to the previous completed run (if any).
+    runs = store.visibility_runs()
+    prev = None
+    for r in runs:
+        if r["id"] != run_id and r["status"] == "done":
+            prev = visibility_agent.summarize(store, r["id"])
+            break
+    if prev and prev["total"]:
+        delta = summary["rate"] - prev["rate"]
+        summary["delta"] = delta
+        summary["prev_rate"] = prev["rate"]
+        if delta <= -VISIBILITY_DROP_THRESHOLD:
+            send_telegram(
+                f"📉 Beacon visibility drop [{profile_id}]\n"
+                f"{prev['rate']*100:.0f}% → {summary['rate']*100:.0f}% "
+                f"({delta*100:+.0f} pts). Check what changed."
+            )
+    return summary
+
+
 def daemon_loop(profile_ids: list[str], interval: int = DEFAULT_INTERVAL):
-    """Run checks periodically."""
+    """Run checks periodically. Visibility runs once per day (costs API calls)."""
     print(f"Beacon daemon started. Checking {len(profile_ids)} profile(s) every {interval}s.")
+    print(f"Visibility runs every {VISIBILITY_INTERVAL}s (daily).")
     print("Press Ctrl+C to stop.\n")
+
+    last_visibility: dict[str, float] = {}
 
     while True:
         try:
@@ -164,6 +223,22 @@ def daemon_loop(profile_ids: list[str], interval: int = DEFAULT_INTERVAL):
                     print(f"  [{pid}] {result['fail']} error(s): {', '.join(result['errors'])}")
                 if not result["warnings"] and not result["errors"]:
                     print(f"  [{pid}] ✓ All checks pass")
+
+            # Daily visibility check (free models only, costs API calls)
+            now_ts = time.time()
+            for pid in profile_ids:
+                if now_ts - last_visibility.get(pid, 0) >= VISIBILITY_INTERVAL:
+                    try:
+                        summary = run_visibility_check(pid)
+                        if summary:
+                            print(
+                                f"  [{pid}] visibility: "
+                                f"{summary['rate']*100:.0f}% named "
+                                f"({summary['mentions']}/{summary['total']})"
+                            )
+                            last_visibility[pid] = now_ts
+                    except Exception as e:
+                        print(f"  [{pid}] visibility check failed: {e}")
 
             # Check SSL
             ssl_warn = check_ssl_expiry()
