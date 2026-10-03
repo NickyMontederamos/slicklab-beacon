@@ -88,3 +88,11 @@ def test_no_website(profile):
     p = profile.model_copy(update={"website": None})
     s = _by_id(run_audit(p, http=_client(GOOD_SCHEMA, None, "")))
     assert s["website"] == "warn"
+
+
+def test_soft_404_html_is_not_mistaken_for_llms_txt(profile):
+    """A catch-all page returns HTTP 200 + HTML. That is not a real llms.txt."""
+    footer = "Call 0945 356 6294 · Salinas Dr, Ucma Village, 6000 Cebu"
+    catch_all = "<!DOCTYPE html><html><head><title>Not found</title></head><body/></html>"
+    s = _by_id(run_audit(profile, http=_client(GOOD_SCHEMA, catch_all, footer)))
+    assert s["llms-txt"] == "fail"

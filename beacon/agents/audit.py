@@ -310,11 +310,27 @@ def _site_checks(profile: Profile, client: httpx.Client) -> list[Check]:
     return checks
 
 
+def _looks_like_html(text: str, content_type: str = "") -> bool:
+    """Catch-all/soft-404 pages return HTTP 200 with HTML. Those are not an llms.txt."""
+    if "text/html" in (content_type or "").lower():
+        return True
+    head = text[:600].lstrip().lower()
+    return head.startswith("<!doctype html") or head.startswith("<html") or "<html" in head
+
+
 def _llms_txt_check(profile: Profile, client: httpx.Client) -> Check:
     url = urljoin(profile.website.rstrip("/") + "/", "llms.txt")
     resp, _ = _fetch(client, url)
     if resp is None or resp.status_code != 200 or not resp.text.strip():
         return Check("llms-txt", "llms.txt", "fail", f"{url} missing or empty.")
+    if _looks_like_html(resp.text, resp.headers.get("content-type", "")):
+        return Check(
+            "llms-txt",
+            "llms.txt",
+            "fail",
+            f"{url} returns an HTML page, not a real llms.txt (the server is serving a "
+            "catch-all page for unknown paths).",
+        )
     text = resp.text
     problems = []
     if not any(fold(n) in fold(text) for n in profile.all_names):
